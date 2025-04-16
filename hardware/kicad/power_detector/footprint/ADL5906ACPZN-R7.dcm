@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP ADL5906ACPZN-R7
+D RF Detector RMS s 10 MHz to 10 GHz 67 dB TruPwr Detector
+K
+F https://componentsearchengine.com/Datasheets/1/ADL5906ACPZN-R7.pdf
+$ENDCMP
+#
+#End Doc Library

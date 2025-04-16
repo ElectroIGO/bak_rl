@@ -1,0 +1,174 @@
+\documentclass[12pt,paper=a4]{report}
+\usepackage[utf8]{inputenc}
+\usepackage{polyglossia}
+%Atkāpes pirmajām rindiņām
+\usepackage{indentfirst}
+%Virsrakstu noformējumam
+\usepackage{titlesec}
+%Attēlu importēšanai
+\usepackage{graphicx}
+%Vajadzēs saliktus attēlus
+\usepackage{subcaption}
+\usepackage{float}
+%Nodefinē attālumus no malām
+\usepackage[a4paper, lmargin=3.5cm,rmargin=2cm,tmargin=2cm, bmargin=2cm]{geometry}
+%rotēšana
+\usepackage{rotating, graphicx}
+%Apjomīgām tabulām
+\usepackage{longtable}
+% tabulu šūnu satura centrēšanai
+\usepackage{array}
+\newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
+%Numerācijai lappuses labajā pusē
+\usepackage{fancyhdr}
+%Literatūras saraksta veidošanai
+\usepackage{natbib}
+\usepackage{url}
+
+%Garas formulas
+\usepackage{amsmath}
+
+%tabulas
+\usepackage{booktabs}
+\usepackage{adjustbox}
+
+% rindu sapludināšana tabulā
+\usepackage{multirow}% http://ctan.org/pkg/multirow
+\usepackage{hhline}% http://ctan.org/pkg/hhline
+%laas tabulas
+\usepackage{tabularx}
+\usepackage{boldline}
+%Lai varetu ievietot lapu landscape
+\usepackage{lscape}
+% pielikumam
+\usepackage[titletoc]{appendix}
+%Noformējuma parametri---------------------------------------------------------------------------------------------
+%Nodefinējam valodas
+\setdefaultlanguage{latvian}
+\setotherlanguages{english,russian}
+
+%Fonts un atstarpe starp rindām
+\setmainfont{Times New Roman}
+%Rindiņas pirmā atkāpe
+\setlength{\parindent}{1.27cm}
+\usepackage{setspace}
+\onehalfspacing
+%Apakšmape bildēm
+\graphicspath{{./pictures/}{./Schematics/}}
+
+%Krāsa dažādiem ieēnojumiem
+%\definecolor{shadecolor}{rgb}{0.75, 0.85, 0.38}
+%Virsrakstu formatējums
+%\newfontfamily\sffamily{Times New Roman}
+% Define Times New Roman as the main sans-serif font
+\renewcommand{\sfdefault}{ptm}
+%\newfontfamily\russianfont{Times New Roman}
+%\titleformat{\chapter}{\large\centering\sffamily\bfseries}{\thechapter}{0pc}{}
+%{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titleformat{\chapter}
+  {\centering\sffamily\fontsize{16}{16}\bfseries}{\thechapter \space{}}{0pc}{}
+\titleformat{\section}{\sffamily\fontsize{14}{14}\bfseries}{\thesection \space{}}{0pc}{}
+\titleformat{\subsection}{\sffamily\fontsize{12}{12}\bfseries}{\thesubsection \space{}}{0pc}{}
+\titlespacing*{\chapter}{0pt}{0pt}{10pt} 
+\titlespacing*{\section}{0pt}{10pt}{5pt} 
+\titlespacing*{\subsection}{0pt}{5pt}{5pt} 
+
+%Nodefinējam objektu numerācijas noteikumus
+\def\thechapter      {\arabic{chapter}}
+\def\thesection      {\ifx\chapter.\undefined{\arabic{section}}\else  {\thechapter.\arabic{section}}\fi}
+\def\thesubsection   {\thesection.\arabic{subsection}}
+\def\thesubsubsection{\thesubsection.\arabic{subsubsection}}
+
+\usepackage{pdfpages}
+
+\renewcommand{\thefigure}{\arabic{chapter}.\arabic{figure}.}
+\renewcommand{\theequation}{\thechapter.\arabic{equation}.}
+\renewcommand{\thetable}{\thechapter.\arabic{table}.}
+%Attelu un tabulu nosaukumi
+%\captionsetup[figure] {labelformat=default,labelsep=space,justification=centerlast}
+%\captionsetup[table] {labelformat=simple,labelsep=newline,textfont=bf}
+%\renewcommand{\figurename}{att.}
+
+%\renewcommand{\tablename}{tabula}
+%\renewcommand{\appendixname}{Pielikums}
+%\makeatletter
+%\renewcommand{\fnum@figure}{}
+%\makeatother
+%Teksta nodaļu fiksētie nosaukumi
+\addto\captionslatvian{
+\renewcommand\bibname{Izmantotās literatūras un avotu saraksts}
+\renewcommand{\contentsname}{Saturs}
+}
+
+%Numeracija
+
+\pagestyle{fancy}
+
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt} 
+\renewcommand{\footrulewidth}{0pt}
+\fancyfoot[R]{\thepage}
+\fancypagestyle{plain}{%
+  \fancyfoot[R]{\thepage}%
+}
+%Pārnesumiem - ļauj tiasīt lielākas starpas
+\hyphenpenalty=5000
+%% Atraitņrindiņas un bāreņrindiņas ( widow orphan) vadība
+\clubpenalty10000
+\widowpenalty10000
+% Apakšsvītrām
+\usepackage{underscore}
+% pārkares paragrāfiem (speciāli saīsinājumiem)
+\newenvironment{hangingpar}[1]
+  {\begin{list}
+          {}
+          {\setlength{\itemindent}{-#1}%%'
+           \setlength{\leftmargin}{#1}%%'
+           \setlength{\itemsep}{0pt}%%'
+           \setlength{\parsep}{\parskip}%%'
+           \setlength{\topsep}{\parskip}%%'
+           }
+    \setlength{\parindent}{-#1}%%
+    \item[]
+  }
+  {\end{list}}
+
+%\renewcommand{\baselinestretch}{1.5}
+\fontsize{12pt}{1.2}
+\linespread{1.25} %1.2 *1.25 = 1.5
+
+\begin{document}
+
+% % Titullapa
+\input{title_page.tex}
+\setcounter{page}{2}
+%Vieta anotācijām---------------------------------------------------------------------------
+\input{LV_abstract.tex}
+\input{ENG_abstract.tex}
+%Saturs---------------------------------------------------------------------------------------
+\tableofcontents
+%Darba ievads bez numerācijas -------------------------------------------------------------------
+\input{abbreviations.tex}
+\input{ievads.tex}
+\input{specifikacija.tex}
+\input{teorija.tex}
+\input{izstrade.tex}
+\input{testesana.tex}
+\input{secinajumi.tex}
+
+%\includepdf[pages={1}]{literSaraksts.pdf}
+%\includepdf[pages={2}]{literSaraksts.pdf}
+%\includepdf[pages={3}]{literSaraksts.pdf}
+
+%\bibliography{litSaraksts}{}
+%\bibliographystyle{ieeetr}
+%\addcontentsline{toc}{chapter}{Izmantotās literatūras un avotu saraksts}
+
+%\input{pielikumi.tex}
+
+%\input{Annex.tex}
+%\input{Galvojums.pdf}
+
+\end{document}
+
