@@ -1,0 +1,36 @@
+\section{Vadības bloka specifikācija}
+Tehniskā specifikācija tika izvirzīta no VSRC puses, kas tika definēta no izstrādātā HPA. HPA pēdējās pakāpes jaudas pastiprinātāja darba punkta iestatīšanas parametri, sagaidāmā tīkla vadība un jaudas detektora mērīšanas diapazons.
+\begin{itemize}
+    \item Darba punkta iestatīšanas procedūra (\textit{ang.} Bias-Up procedure)
+    \begin{itemize}
+        \item Iestatīt jaudas pastiprinātājiem strāvas ierobežojumu uz 18 A, strāvas ierobežojumu uz aizvaru 200 mA.
+        \item Iestatīt aizvara spriegumu − 5.0 V.
+        \item Pievadīt 24 V spriegumu HPA no elektrobarošanas avota.
+        \item Pieskaņot aizvara spriegumu, līdz tiek sasniegta 3 A noteces strāvu.
+        \item Pievadīt RF signālu.
+    \end{itemize}
+    \item Darba punkta atiestatīšana procedūra (\textit{ang.} Bias-Down procedure)
+    \begin{itemize}
+        \item Samazināt aizvara spriegumu līdz -5 V.
+        \item Jaizmēra caurplūstošā strāva caur jaudas pastiprinātāju, jābūt ~ 0 mA.
+        \item Jāatvieno barošanas avotu no jaudas pastiprinātāja.
+        \item Jāatvieno RF signālu.
+    \end{itemize}
+    \item Vadība caur tīklu
+    \begin{itemize}
+        \item TCP servers.
+        \item Līdz 8 klientiem.
+        \item IPv4.
+        \item Jaudas pastiprinātāja un barošanas avota ieslēgšana vai izslēgšana.
+        \item Parametru monitorēšana:
+        \begin{itemize}
+            \item Temperatūra. 
+            \item Spriegumi HPA barošanas avotam un vadības signālam (aizvaram).
+            \item Caurplūstoša strāva cauri HPA.
+            \item Sistēmas stāvoklis.
+        \end{itemize}
+        \item Kļūdu paziņošana. 
+    \end{itemize}
+    \item Izstarotās un atstarotās jaudas noteikšana ar RMS RF jaudas detektoru mērīšanas diapazonā no -50 dBm līdz 0 dBm.
+\end{itemize}
+

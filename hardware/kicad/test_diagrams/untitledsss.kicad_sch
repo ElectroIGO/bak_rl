@@ -1,0 +1,74 @@
+(kicad_sch
+	(version 20250114)
+	(generator "eeschema")
+	(generator_version "9.0")
+	(uuid "58377472-2b5e-450c-afa1-0284bf00005c")
+	(paper "A4")
+	(lib_symbols)
+	(hierarchical_label "Pref"
+		(shape input)
+		(at 140.97 119.38 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "28262ffc-6b61-473e-9944-656407094e95")
+	)
+	(hierarchical_label "RFin"
+		(shape input)
+		(at 88.9 107.95 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "48ab9608-8a8c-463d-ba0f-d5248e3ba483")
+	)
+	(hierarchical_label "Vrms"
+		(shape input)
+		(at 123.19 95.25 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "9612c86b-bf6c-4d69-9b37-c3d55f06924f")
+	)
+	(hierarchical_label "Pfwd"
+		(shape input)
+		(at 140.97 114.3 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "e095006d-0482-43a9-a427-00ed94e042c7")
+	)
+	(hierarchical_label "5 V+"
+		(shape input)
+		(at 104.14 115.57 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "e0d00996-2297-4070-af04-5cc7e83b63e7")
+	)
+	(hierarchical_label "GND"
+		(shape input)
+		(at 104.14 120.65 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "f339db08-abf4-450c-91ab-b7469db30d3c")
+	)
+)

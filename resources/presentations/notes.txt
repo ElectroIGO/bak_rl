@@ -1,0 +1,8 @@
+Rodrigo reperis.
+Noņemt visas elektriski principiālās shēmas un iespiedplates (paslēpt).
+Testa stendu no augšas un sastrukturizēt. 27 slaids.
+Programmas koda blokshēma padomāt par bultiņām (lai ir saprotams bultiņu virziens) un estētiskais uzlabojums.
+Izlabot visu no UDP uz TCP.
+
+
+Mērķus - tēžu veidā.

@@ -1,6 +1,9 @@
 #include "misc.h"
 #include "ad7293.h"
 #include <Ethernet.h>
+#include <math.h>
+#include <ctype.h>
+#include <RP2040.h>
 
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network.
@@ -17,7 +20,7 @@ EthernetServer server(2075);
 EthernetClient clients[8];
 #define ETH_RESET_PIN 20
 
-#define RX_MAX_LEN 10
+#define RX_MAX_LEN 15
 char rx_buff[RX_MAX_LEN];
 #define CMD_MAX_LEN 3
 char cmd_buff[CMD_MAX_LEN+1];
@@ -43,7 +46,7 @@ char response_str_buff[100];
 struct ad7293_dev* ad7293_obj;
 uint16_t data_val;
 
-float taget_amps = 3.0;
+float target_amps = 3.0;
 float rs0_volts;
 float isense0_amps, isense1_amps;
 float Ug0_volts, Ug1_volts;
@@ -58,6 +61,17 @@ int open_loop_mode = 0;
 int pa_on_state = 0;
 int psu_pg_state = 0;
 float temperature_degC = 0;
+float temperature1_degC = 0;
+float temperature2_degC = 0;
+float temperature3_degC = 0;
+float temp_degC_Fpwr = 0; 
+float temp_degC_Rpwr = 0;
+float fwdpwr_dbm = 0; 
+float refpwr_dbm = 0;
+float refpwr = 0;
+float fwdpwr = 0;
+float s11_param = 0;
+
 ////////////////////////////////////////////
 void psu_en(uint8_t en_state){
   if(en_state){
@@ -111,14 +125,76 @@ void bi_vout_raw_to_voltage(uint16_t raw_in, float* voltage_out){
 
 void isense_raw_to_current(uint16_t raw_in, float* current_out, float r_sense){
 
-  *current_out = 2*(((float)((raw_in>>4) - 0x7ff))/4096)*ADC_REF/(U_SENSE_GAIN*r_sense);
+  *current_out = (((float)((raw_in>>4) - 2047.5f))/2048)*ADC_REF/(U_SENSE_GAIN*r_sense);
+}
+
+void tsense_raw_to_celsius(uint16_t raw_in, float* temp) {
+    // Handle the base temperature from D15 (bit 15)
+    *temp = (raw_in & (1 << 15)) ? 0.0f : -256.0f;
+
+    // Values for bits D14 (14) to D4 (4) when set
+    const float bit_values[] = {
+        128.0f,   // D14 (bit 14)
+        64.0f,    // D13 (bit 13)
+        32.0f,    // D12 (bit 12)
+        16.0f,    // D11 (bit 11)
+        8.0f,     // D10 (bit 10)
+        4.0f,     // D9  (bit 9)
+        2.0f,     // D8  (bit 8)
+        1.0f,     // D7  (bit 7)
+        0.5f,     // D6  (bit 6)
+        0.25f,    // D5  (bit 5)
+        0.125f    // D4  (bit 4)
+    };
+
+    // Check each relevant bit from D14 (14) to D4 (4)
+    for (int i = 0; i < 11; i++) {
+        int bit_position = 14 - i;
+        if (raw_in & (1 << bit_position)) {
+            *temp += bit_values[i];
+        }
+    }
+}
+
+void vin_raw_to_celsius(uint16_t raw_in, float* temp) {
+    // Extract 12-bit ADC value from the 16-bit register
+    // Convert ADC value to voltage (5V reference)
+    // Convert voltage to temperature using datasheet formula: T = (V - 1.4) / 0.0048 + 25
+    *temp = ((((((raw_in >> 4) + 0.5f) / 4096.0f) * ADC_REF * 2) -1.4f) / 0.0048f) + 25.0f;
+}
+
+// Convert 16-bit register (12-bit ADC) to dBm (linear approximation)
+void adc_to_dbm_ref(uint16_t raw_in, float* dbm) {
+    // Extract 12-bit ADC value from the 16-bit register
+    // Convert ADC to voltage (5V reference)
+    // Linear approximation: dBm = 38.25 * voltage - 64.41
+    *dbm = 38.25f * ((((raw_in >> 4) + 0.5f) / 4096.0f) * ADC_REF * 2) - 64.41f;
+}
+
+// Convert 16-bit register (12-bit ADC) to dBm (linear approximation)
+void adc_to_dbm_fwd(uint16_t raw_in, float* dbm) {
+    // Extract 12-bit ADC value from the 16-bit register
+    // Convert ADC to voltage (5V reference)
+    // Linear approximation: dBm = 38.25 * voltage - 64.41
+    *dbm = 33.24f * ((((raw_in >> 4) + 0.5f) / 4096.0f ) * ADC_REF * 2) - 53.457f;
+}
+
+void dbm_to_watts(float dbm, float* pwr) {
+    // Convert dBm to Watts using: P(W) = 100 * 10^(dBm/10)
+    *pwr = 100.0f * powf(10.0f, dbm / 10.0f);
+}
+
+// Calculate return loss S11 parameter
+void ref_fwd_s11(float refpwr, float fwdpwr, float* s11){
+  *s11 =  10.0f * log10f(fwdpwr / refpwr);
 }
 
 uint16_t get_dac_value(float target_amps, float r_sense){
   float u_sense = target_amps*r_sense;
   float dac_vout = u_sense*U_SENSE_GAIN;
-  return (uint16_t)(4*DAC_MAX_RANGE*(dac_vout-DAC_OFFSET)/(2*DAC_VREF));
+  return (uint16_t)(16390*(dac_vout-DAC_OFFSET)/(2*DAC_VREF));
 }
+
 
 void open_loop_enable(uint8_t open_loop_state_in){
 
@@ -186,6 +262,24 @@ int ad7293_init_and_configure(uint8_t pa_on){
   if(ret != 0)
     return ret;
 
+  //tsense int, d0, d1 background monitoring enable and digital filtering for all channels:
+  data_val = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 8) | (1 << 9) | (1 << 10);
+  ret = ad7293_spi_update_bits(ad7293_obj, AD7293_REG_TSENSE_BG_EN, data_val, data_val); 
+  if(ret != 0)
+    return ret;
+
+  //vin background int, vin0, vin1, vin2, vin3:
+  data_val = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3);
+  ret = ad7293_spi_update_bits(ad7293_obj, AD7293_REG_BG_EN, data_val, data_val); 
+  if(ret != 0)
+    return ret;
+
+  //vin filter int, vin0, vin1, vin2, vin3:
+  data_val = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3);
+  ret = ad7293_spi_update_bits(ad7293_obj, AD7293_REG_VINX_FILTER, data_val, data_val); 
+  if(ret != 0)
+    return ret;
+
   //rs0 alarm high and low limits:
   ret = ad7293_spi_write(ad7293_obj, AD7293_REG_RS0_MON_HL, (uint16_t)(4096*25.0/(50.0*ADC_REF)-0.5) << 4);
   if(ret != 0)
@@ -218,6 +312,17 @@ int ad7293_init_and_configure(uint8_t pa_on){
   if(ret != 0)
     return ret;
 
+  //
+  data_val = (0 << 0) | (0 << 1) | (0 << 2) | (0 << 3);
+  ret = ad7293_spi_update_bits(ad7293_obj, AD7293_REG_VINX_RANGE0, data_val, data_val);
+  if(ret != 0)
+    return ret;
+
+  //
+  data_val = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3);
+  ret = ad7293_spi_update_bits(ad7293_obj, AD7293_REG_VINX_RANGE1, data_val, data_val);
+  if(ret != 0)
+    return ret;
   delay(500);
   ////bipolar dac0, dac1 can be clamped by SLEEP0 pin
   //ad7293_spi_write(ad7293_obj, AD7293_REG_DAC_SNOOZE_O, (1 << 4) | (1 << 5)); 
@@ -225,14 +330,14 @@ int ad7293_init_and_configure(uint8_t pa_on){
   //PA on
   if(pa_on){
     psu_en(1);
-    delay(100);
+    delay(1000);
 
     data_val = (1 << PA_ON_BIT);
     ret = ad7293_spi_update_bits(ad7293_obj, AD7293_REG_PA_ON_CTRL, data_val, data_val); 
     if(ret != 0)
       return ret;
 
-    delay(100);    
+    delay(1000);    
   }
 
   //closed loop ch0, ch1 enable
@@ -241,11 +346,11 @@ int ad7293_init_and_configure(uint8_t pa_on){
     return ret;
 
   //writing dac registers
-  ret = ad7293_spi_write(ad7293_obj, AD7293_REG_BI_VOUT0, (get_dac_value(taget_amps, RSENSE0) << 4));
+  ret = ad7293_spi_write(ad7293_obj, AD7293_REG_BI_VOUT0, (get_dac_value(target_amps, RSENSE0) << 4));
   if(ret != 0)
     return ret;
 
-  ret = ad7293_spi_write(ad7293_obj, AD7293_REG_BI_VOUT1, (get_dac_value(taget_amps+0.05, RSENSE1) << 4));  
+  ret = ad7293_spi_write(ad7293_obj, AD7293_REG_BI_VOUT1, (get_dac_value(target_amps, RSENSE1) << 4));  
   if(ret != 0)
     return ret;
 
@@ -347,7 +452,7 @@ void pon(uint8_t state){
 
 void setup() {
   Serial.begin(9600);
-
+  rp2040.wdt_begin(3000); // 3-second timeout (applies to both cores)
   pinMode(ETH_RESET_PIN, OUTPUT);
   digitalWrite(ETH_RESET_PIN, LOW);
   delay(100);
@@ -381,7 +486,7 @@ void setup() {
 
 
 void loop() {
-  // wait for a new client:
+ // wait for a new client:
   EthernetClient newClient = server.accept();//server.available();
 
   if (newClient) {
@@ -391,6 +496,9 @@ void loop() {
         // so we must store it into our list of clients
         clients[i] = newClient;
         //digitalWrite(CONNECTION_LED_PIN, HIGH);
+        
+        // Send welcome message to new client
+        clients[i].println("X-band transmitter version 1.0");
         break;
       }
     }
@@ -398,44 +506,119 @@ void loop() {
 
   // check for incoming data from all clients
   for (byte i = 0; i < 8; i++) {
-    if (clients[i] && clients[i].available() > 0) {   
-      int count = clients[i].read((uint8_t*)rx_buff, RX_MAX_LEN);
+    if (clients[i] && clients[i].available() > 0) {
+      int count = clients[i].read((uint8_t*)rx_buff, RX_MAX_LEN - 1);
+      rx_buff[count] = '\0';  // Null-terminate
 
-      memcpy(cmd_buff, rx_buff, CMD_MAX_LEN);
-      cmd_buff[CMD_MAX_LEN] = 0;
-      char cmd_type = rx_buff[CMD_MAX_LEN];//query or set command
-      char cmd_arg = rx_buff[CMD_MAX_LEN+1];//command argument
+      // Special case: 'mon' command (no '=')
+      if (strncmp(rx_buff, "mon", 3) == 0 && (rx_buff[3] == '\0' || rx_buff[3] == '\n' || rx_buff[3] == '\r')) {
+          sprintf(response_str_buff, "mon=%d,%d,%d,%0.3f,%u,%u,%u,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f\n", 
+                  pa_on_state, psu_pg_state, open_loop_mode, rs0_volts, 
+                  (unsigned int)rs0_alert_high, (unsigned int)rs0_alert_low, (unsigned int)alert0_state,
+                  isense0_amps, isense1_amps, Ug0_volts, Ug0_volts_lim-Ug0_volts, Ug1_volts, 
+                  Ug1_volts_lim-Ug1_volts, temperature_degC, temperature1_degC, temperature2_degC,
+                  temp_degC_Fpwr, temp_degC_Rpwr, temperature3_degC, refpwr_dbm, refpwr, 
+                  fwdpwr_dbm, fwdpwr, s11_param);
+          clients[i].print(response_str_buff);
+          continue;  // Skip rest of loop
+      }
 
-      if(strcmp(cmd_buff, "mon") == 0){
-        sprintf(response_str_buff, "%d,%d,%d,%0.3f,%u,%u,%u,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f\n", 
-                pa_on_state, psu_pg_state, open_loop_mode, rs0_volts, (unsigned int)rs0_alert_high, (unsigned int)rs0_alert_low, (unsigned int)alert0_state, 
-                isense0_amps, isense1_amps, Ug0_volts, Ug0_volts_lim-Ug0_volts, Ug1_volts, Ug1_volts_lim-Ug1_volts, temperature_degC);
-        clients[i].print(response_str_buff);
-      } 
-      else if(strcmp(cmd_buff, "pon") == 0){ //PA psu enable
-        if(cmd_type == '='){
-          if(cmd_arg == '0')
-            pon(0);
-          else if(cmd_arg == '1')
-            pon(1); 
+      // For other commands (with '=')
+      char *equal_sign = strchr(rx_buff, '=');
+      char *cmd = rx_buff;
+      char *arg = NULL;
+
+      if (equal_sign != NULL) {
+          *equal_sign = '\0';  // Split command and argument
+          arg = equal_sign + 1;
+          // sprintf(response_str_buff, "DEBUG: Before trimming - arg: '%s'\n", arg);
+          // clients[i].print(response_str_buff);
+          while (*arg && isspace(*arg)) {
+              arg++;
+          }
+          // Trim trailing whitespace
+          char *arg_end = arg + strlen(arg) - 1;
+          while (arg_end >= arg && isspace(*arg_end)) {
+              *arg_end-- = '\0';
+          }
+          // sprintf(response_str_buff, "DEBUG: After trimming - arg: '%s'\n", arg);
+          // clients[i].print(response_str_buff);
+      }
+      if (strcmp(cmd, "pon") == 0) {
+        if (arg != NULL) {
+          if (strcmp(arg, "0") == 0) {
+              pon(0);
+              sprintf(response_str_buff, "pon=0\n");
+          }else if (strcmp(arg, "1") == 0) {
+              pon(1);
+              sprintf(response_str_buff, "pon=1\n");
+          }else{
+              sprintf(response_str_buff, "ERROR: Arg must be 0 or 1\n");
+          }
+          clients[i].print(response_str_buff);
+        } else {
+          sprintf(response_str_buff, "ERROR: no argument provided");
+          clients[i].print(response_str_buff);
         }
-
-        sprintf(response_str_buff, "pon=%d", pa_on_state);
-        clients[i].print(response_str_buff); 
-      } 
-      else if(strcmp(cmd_buff, "olm") == 0){ //open loop mode
-        if(cmd_type == '='){
-          if(cmd_arg == '0')
-            open_loop_enable(0);
-          else if(cmd_arg == '1')
-            open_loop_enable(1);
+      } else if (strcmp(cmd, "olm") == 0) {
+        if(pa_on_state != 1){
+          if (arg != NULL) {
+            if (strcmp(arg, "0") == 0) {
+              open_loop_enable(0);
+              sprintf(response_str_buff, "olm=0\n");
+            }else if (strcmp(arg, "1") == 0) {
+              sprintf(response_str_buff, "Start system before entering open loop\n");
+            }else{
+                sprintf(response_str_buff, "ERROR: Arg must be 0 or 1\n");
+            }
+              clients[i].print(response_str_buff);
+          }else{
+            sprintf(response_str_buff, "ERROR: no argument provided");
+            clients[i].print(response_str_buff);
+          }
+        } else {
+          if (arg != NULL) {
+            if (strcmp(arg, "0") == 0) {
+              open_loop_enable(0);
+              sprintf(response_str_buff, "olm=0\n");
+            }else if (strcmp(arg, "1") == 0) {
+              open_loop_enable(1);
+              sprintf(response_str_buff, "olm=1\n");
+            }else{
+              sprintf(response_str_buff, "ERROR: Arg must be 0 or 1\n");
+            }
+            clients[i].print(response_str_buff);
+          }else{
+            sprintf(response_str_buff, "ERROR: no argument provided");
+            clients[i].print(response_str_buff);
+          }
         }
+      } else if (strcmp(cmd, "setcurr") == 0) {
+          if (arg != NULL) {
+              char *endptr;
+              float new_amps = strtof(arg, &endptr);
 
-        sprintf(response_str_buff, "olm=%d", open_loop_mode);
-        clients[i].print(response_str_buff); 
-      }  
-      else
-        Serial.print("Command not supported!\n");
+              if (arg == endptr) {
+                  sprintf(response_str_buff, "ERROR: Invalid number");
+              }
+              else if (*endptr != '\0' && !isspace(*endptr)) {
+                  sprintf(response_str_buff, "ERROR: Extra characters");
+              }
+              else if (new_amps < 0.0f || new_amps > 100.0f) {
+                  sprintf(response_str_buff, "ERROR: Current out of range");
+              }
+              else {
+                  target_amps = new_amps;
+                  sprintf(response_str_buff, "Current set to %0.3f", target_amps);
+              }
+          }
+          else {
+              sprintf(response_str_buff, "Current value: %0.3f", target_amps);
+          }
+          clients[i].print(response_str_buff);
+      } else {
+        Serial.println("ERROR: Unknown command");
+      }
     }
   }
 
@@ -444,9 +627,10 @@ void loop() {
     if (clients[i] && !clients[i].connected()) {
       //digitalWrite(CONNECTION_LED_PIN, LOW);
       clients[i].stop();
+      clients[i] = EthernetClient();  // Clear the entry
     }
   }
-
+  rp2040.wdt_reset();
 }
 
 void setup1() {
@@ -519,8 +703,7 @@ void loop1() {
 
       if(open_loop_mode){
         digitalWrite(LED1_PIN, HIGH);
-      }
-      else{
+      }else{
         digitalWrite(LED1_PIN, LOW);
         Ug0_volts_lim = 0;
         Ug1_volts_lim = 0;
@@ -547,17 +730,32 @@ void loop1() {
         rs0_alert_low = (rsx_alerts>>0)&0x1;
         alert0_state = 0;
 
+        ad7293_spi_read(ad7293_obj, AD7293_REG_TSENSE_INT, &adc_raw);
+        tsense_raw_to_celsius(adc_raw, &temperature3_degC);
+        ad7293_spi_read(ad7293_obj, AD7293_REG_TSENSE_D0, &adc_raw);
+        tsense_raw_to_celsius(adc_raw, &temperature1_degC);
+        ad7293_spi_read(ad7293_obj, AD7293_REG_TSENSE_D1, &adc_raw);
+        tsense_raw_to_celsius(adc_raw, &temperature2_degC);
+        
+        ad7293_spi_read(ad7293_obj, AD7293_REG_VIN0, &adc_raw);
+        vin_raw_to_celsius(adc_raw, &temp_degC_Rpwr);
+        ad7293_spi_read(ad7293_obj, AD7293_REG_VIN1, &adc_raw);
+        adc_to_dbm_ref(adc_raw, &refpwr_dbm);
+        ad7293_spi_read(ad7293_obj, AD7293_REG_VIN2, &adc_raw);
+        vin_raw_to_celsius(adc_raw, &temp_degC_Fpwr);
+        ad7293_spi_read(ad7293_obj, AD7293_REG_VIN3, &adc_raw);
+        adc_to_dbm_fwd(adc_raw, &fwdpwr_dbm);
+        dbm_to_watts(refpwr_dbm, &refpwr);
+        dbm_to_watts(fwdpwr_dbm, &fwdpwr);
+        ref_fwd_s11(refpwr, fwdpwr, &s11_param);
+
         if(digitalRead(AD_ALERT0)){
           alert0_state = 1;
           pa_on_state = 0;
           digitalWrite(LED2_PIN, HIGH);
         }else{
           digitalWrite(LED2_PIN, LOW);
-        }
-
-        Serial.printf("pon: %d, pg: %d, olm: %d, rs0: %0.3f V, rs0_hi: %u, rs0_lo: %u, al0: %u, sen0: %0.3f A, sen1: %0.3f A, Ug0: %0.3f V (%0.3f), Ug1: %0.3f V (%0.3f), tmp: %0.3f degC\n", 
-                pa_on_state, psu_pg_state, open_loop_mode, rs0_volts, (unsigned int)rs0_alert_high, (unsigned int)rs0_alert_low, (unsigned int)alert0_state, 
-                isense0_amps, isense1_amps, Ug0_volts, Ug0_volts_lim-Ug0_volts, Ug1_volts, Ug1_volts_lim-Ug1_volts, temperature_degC);        
+        }     
       }else if(ad_monitoring_halt == 2){
         Serial.printf("ad7293 init failed ...\n");
       }

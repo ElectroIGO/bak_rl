@@ -1,0 +1,40 @@
+\section{S-parametri}
+Izkliedēšanas parametri \cite{s_param} (S-parametri) tie raksturo, cik liela signāla daļa tiek atstarota, izplatīta caur vai pārnesta starp ķēdes portiem. Signāla parametri S ir kompleksi lielumi, kas ietver gan amplitūdas, gan fāzes raksturlielumus. Elektriskā ķēde ir ierīce ar vienu vai vairākiem portiem, kur katrs ports var pārraidīt, absorbēt vai atstarot RF signālu. 
+Elektriskā ķēde tiek klasificēta pēc portu skaita: 
+\begin{itemize}
+    \item Viens ports: piemēram, ir antena vai 50 omu slodze.
+    \item Divi porti: piemēram, ir filtrs vai pastiprinātājs.
+    \item Trīs porti: piemēram, ir virziena atzarotājs.
+\end{itemize}
+Ķēdes analizē, ievadot RF signālu noteiktā portā un mērot RF līmeni, kas parādās šajā portā (atstarotais signāls) un/vai citos portos. Parasti vienlaikus tiek ievadīts tikai viens signāls vienā portā, un mērījumi tiek veikti dažādu frekvenču diapazonā. Ierīci, ko parasti izmanto ķēdes analīzei, sauc par ķēžu analizatoru.
+S parametru apzīmē ar burtu “S”, kam seko divi apakšraksti, kur pirmais apakšindekss norāda izejas portu, bet otrais apakšindekss ieejas portu. Piemēram:
+\begin{itemize}
+    \item Ja signāls tiek pievadīts portā 1 un izmērīts porta 1, tad S-parametru apzīmē kā $S_{11}$.
+    \item Ja signāls tiek pievadīts portā 1 un izmērīts porta 2, tad S-parametru apzīmē kā $S_{21}$.
+    \item Ja signāls tiek pievadīts portā 2 un izmērīts porta 3, tad S-parametru apzīmē kā $S_{32}$ u.t.t.
+\end{itemize}
+\begin{figure}[H]
+	\centering
+    \includesvg[width=0.6\textwidth]{pictures/s-param_diag.svg}
+    \hspace{1cm}
+    \caption{S-parametru nosaukumu diagramma}
+\end{figure}
+Divu portu elektriskā ķēde ir aprakstīta ar četriem S parametriem:
+\begin{itemize}
+    \item $S_{11}$/$S_{22}$ ir ieejas atstarošanas koeficients. Tas mēra ieejas signāla daļu pie 1. porta, kas tiek atstarota atpakaļ pie 1. porta. Šis parameters norāda, cik liela daļa no ieejas signāla tiek atstarota saistībā ar impedances nesakritību.
+    \item $S_{21}$/$S_{12}$ ir pārvades koeficienti. Tas mēra ieejas signāla daļu pie 1. porta, kas tiek pārraidīta uz 2. portu. Šis parameters norāda signāla pārraides efektivitāti no ieejas uz izeju.
+\end{itemize}
+
+\begin{figure}[H]
+	\centering
+    \includesvg[width=0.6\textwidth]{pictures/s_param_2_port.svg}
+    \hspace{1cm}
+    \caption{2 portu s-parametru diagramma}
+\end{figure}
+S parametrus var attēlot kā N×N matricu, kur N ir portu skaits tīklā. Katrs matricas elements $S_{xy}$ apzīmē izkliedes parametrus no porta y uz portu x. To var reprezentēt šādi:
+\[
+\mathbf{S} = \begin{bmatrix}
+  S_{11} & S_{12} \\
+  S_{21} & S_{22}
+\end{bmatrix}
+\]

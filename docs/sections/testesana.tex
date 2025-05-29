@@ -1,0 +1,14 @@
+\chapter{Testi}
+Testi tika sadalīti vairākās daļās, lai pārliecinātos par atsevišķu apakšsistēmu funkcionalitāti. Visi testi izriet no specifikācijas, lai pārbaudītu sistēmu atbilstību. Testi ietver darba punkta iestatīšanu RF jaudas pastiprinātājam, digitālās loģikas barošanas risinājuma novērtējumu, jaudas detektora elektrisko parametru noteikšanu pie 7.2 GHz un tīkla vadību ar TCP protokolu. Testos tiek izmantotas tādas mēriekārtas kā Metex M-3604D digitālais rokas multimetrs \cite{metex_multimeter}, Fluke 87 digitālais multimetrs \cite{fluke_multimeter}, SIGLENT SDS-1104X-U osciloskops \cite{oscil}, Rohde\&Schwarz signāla ģenerators SMP04 \cite{rs_signal_generator}, Rohde\&Schwarz VNA ZVK \cite{rs_vna}, BaseTech BT-305 barošanas avots \cite{test_powersupply} un IGENT SPL 1020 XE 200W DC programmējamo slodzi \cite{programmable_load}.
+Testa sadaļās:
+\begin{itemize}
+    \item Darba punkta iestatīšanas/attiestatīšanas.
+    \item 5 un 9 V barošanas risinājuma novērtējums.
+    \item Jaudas detektora un koaksiāļo kabeļu novērtējums.
+    \item Sistēmas vadība caur tīklu.
+\end{itemize}
+
+\input{sections/tests/bias_procedure}
+\input{sections/tests/power_solution}
+\input{sections/tests/power_detector}
+\input{sections/tests/network_solution}

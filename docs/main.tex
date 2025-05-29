@@ -23,8 +23,10 @@
 %Numerācijai lappuses labajā pusē
 \usepackage{fancyhdr}
 %Literatūras saraksta veidošanai
-\usepackage{natbib}
-\usepackage{url}
+%\usepackage{natbib}
+\usepackage{hyperref} % For clickable links
+\usepackage{url}      % For better URL formatting
+\bibliographystyle{IEEEtran}
 
 %Garas formulas
 \usepackage{amsmath}
@@ -43,8 +45,18 @@
 \usepackage{lscape}
 % pielikumam
 \usepackage[titletoc]{appendix}
+% Allows line breaks within cells
+\usepackage{array}     % For column alignment
+\usepackage{makecell}  % For line breaks in headers
+
+\usepackage{pgfplots} % Required for plotting
+\pgfplotsset{compat=1.18} % Ensure compatibility
+\usepackage{siunitx} % For SI unit formatting
+
+\usepackage{svg}
 %Noformējuma parametri---------------------------------------------------------------------------------------------
 %Nodefinējam valodas
+\usepackage[labelsep=space]{caption} % Global setting for all tables
 \setdefaultlanguage{latvian}
 \setotherlanguages{english,russian}
 
@@ -57,22 +69,15 @@
 %Apakšmape bildēm
 \graphicspath{{./pictures/}{./Schematics/}}
 
-%Krāsa dažādiem ieēnojumiem
-%\definecolor{shadecolor}{rgb}{0.75, 0.85, 0.38}
-%Virsrakstu formatējums
-%\newfontfamily\sffamily{Times New Roman}
-% Define Times New Roman as the main sans-serif font
 \renewcommand{\sfdefault}{ptm}
-%\newfontfamily\russianfont{Times New Roman}
-%\titleformat{\chapter}{\large\centering\sffamily\bfseries}{\thechapter}{0pc}{}
-%{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+
 \titleformat{\chapter}
   {\centering\sffamily\fontsize{16}{16}\bfseries}{\thechapter \space{}}{0pc}{}
 \titleformat{\section}{\sffamily\fontsize{14}{14}\bfseries}{\thesection \space{}}{0pc}{}
 \titleformat{\subsection}{\sffamily\fontsize{12}{12}\bfseries}{\thesubsection \space{}}{0pc}{}
-\titlespacing*{\chapter}{0pt}{0pt}{10pt} 
-\titlespacing*{\section}{0pt}{10pt}{5pt} 
-\titlespacing*{\subsection}{0pt}{5pt}{5pt} 
+\titlespacing*{\chapter}{0pt}{0pt}{15pt} 
+\titlespacing*{\section}{0pt}{20pt}{10pt} 
+\titlespacing*{\subsection}{0pt}{15pt}{10pt} 
 
 %Nodefinējam objektu numerācijas noteikumus
 \def\thechapter      {\arabic{chapter}}
@@ -142,33 +147,23 @@
 
 % % Titullapa
 \input{title_page.tex}
-\setcounter{page}{2}
+\pagenumbering{gobble}
 %Vieta anotācijām---------------------------------------------------------------------------
 \input{LV_abstract.tex}
 \input{ENG_abstract.tex}
 %Saturs---------------------------------------------------------------------------------------
 \tableofcontents
-%Darba ievads bez numerācijas -------------------------------------------------------------------
 \input{abbreviations.tex}
-\input{ievads.tex}
-\input{specifikacija.tex}
-\input{teorija.tex}
-\input{izstrade.tex}
-\input{testesana.tex}
-\input{secinajumi.tex}
-
-%\includepdf[pages={1}]{literSaraksts.pdf}
-%\includepdf[pages={2}]{literSaraksts.pdf}
-%\includepdf[pages={3}]{literSaraksts.pdf}
-
-%\bibliography{litSaraksts}{}
-%\bibliographystyle{ieeetr}
-%\addcontentsline{toc}{chapter}{Izmantotās literatūras un avotu saraksts}
-
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{6}
+\input{sections/ievads.tex}
+\input{sections/teorija.tex}
+\input{sections/izstrade.tex}
+\input{sections/testesana.tex}
+\input{sections/secinajumi.tex}
+\bibliography{refs}
 %\input{pielikumi.tex}
-
-%\input{Annex.tex}
-%\input{Galvojums.pdf}
+\includepdf[pages=-]{Galvojums.pdf}
 
 \end{document}
-
