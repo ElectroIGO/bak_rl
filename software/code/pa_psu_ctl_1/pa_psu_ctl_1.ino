@@ -168,7 +168,16 @@ void adc_to_dbm_ref(uint16_t raw_in, float* dbm) {
     // Extract 12-bit ADC value from the 16-bit register
     // Convert ADC to voltage (5V reference)
     // Linear approximation: dBm = 38.25 * voltage - 64.41
-    *dbm = 38.25f * ((((raw_in >> 4) + 0.5f) / 4096.0f) * ADC_REF * 2) - 64.41f;
+    float voltage = (((raw_in >> 4) + 0.5f) / 4096.0f) * (ADC_REF * 2);
+
+    // Segment 1: -55 dBm to -39 dBm (0.355V to 0.484V)
+    if (voltage <= 0.484f) {
+        *dbm = (55.714f * voltage) - 74.857f;  // Error: ±0.3 dBm
+    }
+    // Segment 2: -39 dBm to -12 dBm (0.484V to 1.920V)
+    else {
+        *dbm = (33.333f * voltage) - 55.333f;  // Error: ±0.7 dBm
+    }
 }
 
 // Convert 16-bit register (12-bit ADC) to dBm (linear approximation)
@@ -176,7 +185,19 @@ void adc_to_dbm_fwd(uint16_t raw_in, float* dbm) {
     // Extract 12-bit ADC value from the 16-bit register
     // Convert ADC to voltage (5V reference)
     // Linear approximation: dBm = 38.25 * voltage - 64.41
-    *dbm = 33.24f * ((((raw_in >> 4) + 0.5f) / 4096.0f ) * ADC_REF * 2) - 53.457f;
+    float voltage = ((((raw_in >> 4) + 0.5f) / 4096.0f ) * ADC_REF * 2);
+      // Segment 1: -50 dBm to -42 dBm (0.104V to 0.397V)
+    if (voltage <= 0.397f) {
+        *dbm = (34.783f * voltage) - 53.783f;  // Error: ±0.8 dBm
+    }
+    // Segment 2: -42 dBm to -12 dBm (0.397V to 1.347V)
+    else if (voltage <= 1.347f) {
+        *dbm = (33.333f * voltage) - 55.333f;  // Error: ±0.6 dBm
+    }
+    // Segment 3: -12 dBm to 9 dBm (1.347V to 1.879V)
+    else {
+        *dbm = (37.736f * voltage) - 62.736f;  // Error: ±0.9 dBm
+    }
 }
 
 void dbm_to_watts(float dbm, float* pwr) {
