@@ -165,39 +165,47 @@ void vin_raw_to_celsius(uint16_t raw_in, float* temp) {
 
 // Convert 16-bit register (12-bit ADC) to dBm (linear approximation)
 void adc_to_dbm_ref(uint16_t raw_in, float* dbm) {
-    // Extract 12-bit ADC value from the 16-bit register
-    // Convert ADC to voltage (5V reference)
-    // Linear approximation: dBm = 38.25 * voltage - 64.41
-    float voltage = (((raw_in >> 4) + 0.5f) / 4096.0f) * (ADC_REF * 2);
-
-    // Segment 1: -55 dBm to -39 dBm (0.355V to 0.484V)
-    if (voltage <= 0.484f) {
-        *dbm = (55.714f * voltage) - 74.857f;  // Error: ±0.3 dBm
-    }
-    // Segment 2: -39 dBm to -12 dBm (0.484V to 1.920V)
-    else {
-        *dbm = (33.333f * voltage) - 55.333f;  // Error: ±0.7 dBm
-    }
+  // Extract 12-bit ADC value from the 16-bit register
+  // Convert ADC to voltage (5V reference)
+  
+  float voltage = (((raw_in >> 4) + 0.5f) / 4096.0f) * (ADC_REF * 2);
+  // Linear approximation:
+  // Region 1: -56 dBm to -38.29 dBm (0.358V to 0.469V)
+  if (voltage <= 0.469f) {
+      *dbm = (159.54955f * voltage) - 113.1187f;  // Error: ±x dB
+  }
+  // Region 2: -38.29 dBm to -12.48 dBm (0.469V to 1.287V)
+  else if (voltage <= 1.287f) {
+      *dbm = (30.485934f * voltage) - 51.7154f;   // Error: ±x dB
+  }
+  // Region 3: -12.48 dBm to 8.54 dBm (1.287V to 1.909V)
+  else {
+      *dbm = (36.11465f * voltage) - 54.36363f;   // Error: ±x dB
+  }
 }
 
 // Convert 16-bit register (12-bit ADC) to dBm (linear approximation)
 void adc_to_dbm_fwd(uint16_t raw_in, float* dbm) {
-    // Extract 12-bit ADC value from the 16-bit register
-    // Convert ADC to voltage (5V reference)
-    // Linear approximation: dBm = 38.25 * voltage - 64.41
-    float voltage = ((((raw_in >> 4) + 0.5f) / 4096.0f ) * ADC_REF * 2);
-      // Segment 1: -50 dBm to -42 dBm (0.104V to 0.397V)
-    if (voltage <= 0.397f) {
-        *dbm = (34.783f * voltage) - 53.783f;  // Error: ±0.8 dBm
-    }
-    // Segment 2: -42 dBm to -12 dBm (0.397V to 1.347V)
-    else if (voltage <= 1.347f) {
-        *dbm = (33.333f * voltage) - 55.333f;  // Error: ±0.6 dBm
-    }
-    // Segment 3: -12 dBm to 9 dBm (1.347V to 1.879V)
-    else {
-        *dbm = (37.736f * voltage) - 62.736f;  // Error: ±0.9 dBm
-    }
+  // Extract 12-bit ADC value from the 16-bit register
+  // Convert ADC to voltage (5V reference)
+  
+  float voltage = ((((raw_in >> 4) + 0.5f) / 4096.0f ) * ADC_REF * 2);
+  // Linear approximation:
+    // Segment 1: -52.2 dBm to -48.21 dBm (0.055V to 0.24V)
+  if (voltage <= 0.24f) {
+      *dbm = (21.56756757f * voltage) - 57.18621622f; // Error: ±x dB
+  }
+  // Segment 2: -48.21 dBm to -38.29 dBm (0.24V to 0.463V)
+  else if (voltage <= 0.463f) {
+      *dbm = (44.82954545f * voltage) - 59.72102273f; // Error: ±x dB
+  }
+  // Segment 3: -38.29 dBm to -12.48 dBm (0.463V to 1.363V)
+  else if (voltage <= 1.363f) {
+      *dbm = (28.67777778f * voltage) - 51.12517778f; // Error: ±x dB
+  }
+  // Segment 4: -12.48 dBm to 8.54 dBm (1.363V to 1.897V)
+  else { 
+      *dbm = (40.11450382f * voltage) - 58.31408397f; // Error: ±x dB
 }
 
 void dbm_to_watts(float dbm, float* pwr) {
@@ -473,7 +481,7 @@ void pon(uint8_t state){
 
 void setup() {
   Serial.begin(9600);
-  rp2040.wdt_begin(3000); // 3-second timeout (applies to both cores)
+  //rp2040.wdt_begin(3000); // 3-second timeout (applies to both cores)
   pinMode(ETH_RESET_PIN, OUTPUT);
   digitalWrite(ETH_RESET_PIN, LOW);
   delay(100);
@@ -651,7 +659,7 @@ void loop() {
       clients[i] = EthernetClient();  // Clear the entry
     }
   }
-  rp2040.wdt_reset();
+  //rp2040.wdt_reset();
 }
 
 void setup1() {

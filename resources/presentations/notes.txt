@@ -1,8 +1,6 @@
-Rodrigo reperis.
-Noņemt visas elektriski principiālās shēmas un iespiedplates (paslēpt).
-Testa stendu no augšas un sastrukturizēt. 27 slaids.
-Programmas koda blokshēma padomāt par bultiņām (lai ir saprotams bultiņu virziens) un estētiskais uzlabojums.
-Izlabot visu no UDP uz TCP.
-
-
 Mērķus - tēžu veidā.
+X-joslas HPA (varbūt nomainīt nosaukumu).
+Specifikācijā (iespējams ļoti augstu blokshēmu ar tikai bloku).
+Jāpiemin prezentācija jaudas (nav jābūt tekstuāli, bet prezentācijā pie HPA to varētu pieminēt).
+Telemetriju pārlikt no draw.io uz excel.
+Visas sistēmas jaudas patēriņa novērtējums.
